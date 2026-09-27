@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Franck & Robert IT Solutions</title>
+        <link rel="stylesheet" href="tailwind.css">
+    </head>
+    <body>
+        <header class="flex min-h-[76px] items-center border-b border-[#e5e7eb] bg-white px-[6vw]">
+            <a class="inline-flex items-center gap-3 text-[1.1rem] font-bold tracking-[0.02em] text-[#17202a] no-underline" href="/" aria-label="FR IT Solutions home">
+                <span class="grid size-[38px] place-items-center rounded-[10px] bg-[#f7cbbd] font-sans text-[0.85rem] tracking-[-0.08em] text-[#993709]" aria-hidden="true">FR</span>
+                <span>FR IT Solutions</span>
+            </a>
+            <nav class="ml-auto flex items-center gap-4" aria-label="Account">
+                <a class="font-sans text-sm text-[#17202a] hover:text-[#993709]" href="/login.html">Login</a>
+                <a class="font-sans text-sm text-[#17202a] hover:text-[#993709]" href="/register.html">Register</a>
+                <button class="grid size-[42px] place-items-center rounded-full border border-[#e5e7eb] bg-white p-[9px] text-[#17202a] hover:border-[#f7cbbd] hover:bg-[#f8faf9] hover:text-[#993709] focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#993709]" type="button" aria-label="User account" title="User account">
+                <svg class="size-full" aria-hidden="true" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                    <circle cx="12" cy="8" r="3.5" />
+                    <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+                </svg>
+                </button>
+            </nav>
+        </header>
+        <main class="mx-auto w-[min(880px,88vw)] py-20 sm:py-28">
+            <h1 class="mb-4 max-w-[620px] text-[clamp(2.5rem,7vw,5rem)] leading-[0.98] font-normal">Ideas, insight, and practical technology.</h1>
+            <p class="max-w-[520px] font-sans text-base leading-[1.7] text-[#66717d]">Welcome to the starting page for Franck &amp; Robert IT Solutions.</p>
+            <section class="mt-14 sm:mt-20" aria-labelledby="posts-heading">
+                <div class="mb-6">
+                    <span class="font-sans text-xs font-bold uppercase text-[#993709]">From the blog</span>
+                    <h2 class="mt-1 text-[2rem] font-normal" id="posts-heading">Latest posts</h2>
+                </div>
+                <p class="max-w-[520px] font-sans text-base leading-[1.7] text-[#66717d]" id="posts-status" role="status">Loading posts...</p>
+                <div class="border-t border-[#e5e7eb]" id="posts-list"></div>
+            </section>
+        </main>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const supabaseUrl = "https://ekxvelluydlqkdzrmbaj.supabase.co";
+    const supabaseKey = "sb_publishable_cOI-E0fFa4SCatcI55eYsw_-3XSA9Wq";
+
+    const supabaseClient = window.supabase.createClient(
+        supabaseUrl,
+        supabaseKey
+    );
+
+    async function loadPosts() {
+        const postsList = document.getElementById("posts-list");
+        const postsStatus = document.getElementById("posts-status");
+        const { data, error } = await supabaseClient
+            .from("posts")
+            .select("*");
+
+        if (error) {
+            console.error("Could not load posts:", error);
+            postsStatus.textContent = "Posts could not be loaded.";
+            return;
+        }
+
+        if (!data || data.length === 0) {
+            postsStatus.textContent = "No posts have been published yet.";
+            return;
+        }
+
+        const getText = (...values) => {
+            const value = values.find(item => item !== null && item !== undefined && item !== "");
+            if (typeof value === "string") return value;
+            if (typeof value === "object") return JSON.stringify(value);
+            return value === undefined ? "" : String(value);
+        };
+
+        data.sort((first, second) => {
+            const firstDate = Date.parse(first.published_at || first.created_at || "") || 0;
+            const secondDate = Date.parse(second.published_at || second.created_at || "") || 0;
+            return secondDate - firstDate;
+        });
+
+        postsStatus.hidden = true;
+        data.forEach(post => {
+            const article = document.createElement("article");
+            article.className = "border-b border-[#e5e7eb] py-6";
+
+            const title = document.createElement("h3");
+            title.className = "m-0 text-2xl font-normal";
+            title.textContent = getText(post.title, post.name) || "Untitled post";
+            article.append(title);
+
+            const details = [getText(post.author, post.author_name)];
+            const dateValue = post.published_at || post.created_at;
+            if (dateValue) {
+                const date = new Date(dateValue);
+                if (!Number.isNaN(date.getTime())) {
+                    details.push(date.toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric"
+                    }));
+                }
+            }
+            const metadata = details.filter(Boolean).join(" · ");
+            if (metadata) {
+                const meta = document.createElement("p");
+                meta.className = "mt-2 max-w-[520px] font-sans text-[0.8rem] leading-[1.7] text-[#993709]";
+                meta.textContent = metadata;
+                article.append(meta);
+            }
+
+            const content = getText(post.excerpt, post.content, post.body, post.text, post.description);
+            if (content) {
+                const body = document.createElement("p");
+                body.className = "mt-3 max-w-[520px] whitespace-pre-line font-sans text-base leading-[1.7] text-[#66717d]";
+                body.textContent = content;
+                article.append(body);
+            }
+
+            postsList.append(article);
+        });
+    }
+
+    loadPosts();
+</script>
+    </body>    
+</html>
